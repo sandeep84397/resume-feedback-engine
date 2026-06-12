@@ -1,7 +1,7 @@
 from pydantic import BaseModel, Field
 
-from rfe.domain.entities import (Candidate, Evaluation, Feedback,
-                                 FeedbackBullet, Rubric)
+from rfe.domain.entities import (Candidate, Evaluation, EvaluationStatus,
+                                 Feedback, FeedbackBullet, Rubric)
 from rfe.domain.errors import DomainError, FeedbackValidationError
 from rfe.domain.selection import SALARY_CRITERION_ID, select_unmet_criteria
 from rfe.ports.model_provider import ModelProvider
@@ -29,6 +29,8 @@ class ComposeFeedback:
 
     def execute(self, candidate: Candidate, rubric: Rubric,
                 evaluation: Evaluation, feedback_id: str) -> Feedback:
+        if evaluation.status == EvaluationStatus.NEEDS_HUMAN:
+            raise DomainError("evaluation requires human review")
         unmet = select_unmet_criteria(rubric, evaluation)
         if not unmet:
             raise DomainError("no unmet criteria; nothing to compose feedback from")

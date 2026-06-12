@@ -3,7 +3,7 @@ from __future__ import annotations
 from enum import Enum
 from typing import Any
 
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from rfe.domain.errors import DomainError, InvalidTransitionError, RubricImmutableError
 
@@ -16,6 +16,8 @@ class CriterionType(str, Enum):
 
 
 class Criterion(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
     id: str
     name: str
     description: str = ""
@@ -94,6 +96,14 @@ class Candidate(BaseModel):
     email: str
     resume_text: str
     salary_expectation: float | None = None
+
+    @field_validator("resume_text")
+    @classmethod
+    def _reject_blank_resume(cls, v: str) -> str:
+        stripped = v.strip()
+        if not stripped:
+            raise ValueError("resume_text must not be empty or whitespace")
+        return stripped
 
 
 class CriterionScore(BaseModel):
