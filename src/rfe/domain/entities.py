@@ -4,7 +4,7 @@ from enum import Enum
 
 from pydantic import BaseModel, Field
 
-from rfe.domain.errors import DomainError, RubricImmutableError
+from rfe.domain.errors import DomainError, InvalidTransitionError, RubricImmutableError
 
 
 class CriterionType(str, Enum):
@@ -55,3 +55,54 @@ class Candidate(BaseModel):
     email: str
     resume_text: str
     salary_expectation: float | None = None
+
+
+class CriterionScore(BaseModel):
+    criterion_id: str
+    score: int = Field(ge=0, le=5)
+    evidence: str = ""
+    confidence: float = Field(default=1.0, ge=0.0, le=1.0)
+
+
+class EvaluationStatus(str, Enum):
+    COMPLETE = "complete"
+    NEEDS_HUMAN = "needs_human"
+
+
+class Evaluation(BaseModel):
+    id: str
+    candidate_id: str
+    rubric_id: str
+    scores: list[CriterionScore] = Field(default_factory=list)
+    status: EvaluationStatus = EvaluationStatus.COMPLETE
+    salary_mismatch: bool = False
+
+
+class FeedbackStatus(str, Enum):
+    DRAFTED = "drafted"
+    APPROVED = "approved"
+    SENT = "sent"
+
+
+class FeedbackBullet(BaseModel):
+    criterion_id: str
+    text: str
+
+
+class Feedback(BaseModel):
+    id: str
+    evaluation_id: str
+    candidate_id: str
+    intro: str
+    bullets: list[FeedbackBullet]
+    status: FeedbackStatus = FeedbackStatus.DRAFTED
+
+    def approve(self) -> None:
+        if self.status != FeedbackStatus.DRAFTED:
+            raise InvalidTransitionError(f"cannot approve feedback in state {self.status}")
+        self.status = FeedbackStatus.APPROVED
+
+    def mark_sent(self) -> None:
+        if self.status != FeedbackStatus.APPROVED:
+            raise InvalidTransitionError(f"cannot send feedback in state {self.status}")
+        self.status = FeedbackStatus.SENT
