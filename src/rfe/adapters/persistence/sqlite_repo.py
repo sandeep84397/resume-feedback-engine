@@ -71,3 +71,9 @@ class SqliteRepository(Generic[E]):
             f"SELECT payload FROM {self._table}"
         ).fetchall()
         return [self._type.model_validate_json(r[0]) for r in rows]
+
+    def delete(self, entity_id: str) -> None:
+        self._conn.execute(
+            f"DELETE FROM {self._table} WHERE id = ?", (entity_id,)
+        )
+        self._conn.commit()

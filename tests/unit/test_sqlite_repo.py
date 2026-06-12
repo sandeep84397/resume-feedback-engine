@@ -83,6 +83,18 @@ def test_feedback_roundtrips_with_bullets(conn):
     assert loaded.bullets[0].criterion_id == "k8s"
 
 
+def test_delete_removes_entity(conn):
+    repo: SqliteRepository[Role] = SqliteRepository(conn, Role, "roles")
+    repo.save(Role(id="r1", title="SRE"))
+    repo.delete("r1")
+    assert repo.list() == []
+
+
+def test_delete_missing_is_noop(conn):
+    repo: SqliteRepository[Role] = SqliteRepository(conn, Role, "roles")
+    repo.delete("nope")  # should not raise
+
+
 def test_persists_across_repo_instances(tmp_path):
     path = str(tmp_path / "persist.db")
     c1 = open_connection(path)

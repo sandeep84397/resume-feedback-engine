@@ -24,3 +24,6 @@ class InMemoryRepository(Generic[E]):
 
     def list(self) -> list[E]:
         return list(self._items.values())
+
+    def delete(self, entity_id: str) -> None:
+        self._items.pop(entity_id, None)
