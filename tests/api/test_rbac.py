@@ -63,3 +63,23 @@ def test_public_feedback_path_skips_auth():
         return {"public": True}
 
     assert TestClient(app).get("/f/tok").status_code == 200
+
+
+def test_policy_covers_workflow_routes():
+    from rfe.api.rbac import ROUTE_MIN_ROLE
+
+    # GET (read) routes are viewer; write workflow is recruiter; destructive is admin
+    assert ROUTE_MIN_ROLE[("POST", "/roles")] == "recruiter"
+    assert ROUTE_MIN_ROLE[("POST", "/roles/{role_id}/rubric/publish")] == "recruiter"
+    assert ROUTE_MIN_ROLE[("POST", "/candidates/{candidate_id}/evaluate")] == "recruiter"
+    assert ROUTE_MIN_ROLE[("POST", "/feedback/{feedback_id}/approve")] == "recruiter"
+    assert ROUTE_MIN_ROLE[("POST", "/feedback/{feedback_id}/send")] == "recruiter"
+    assert ROUTE_MIN_ROLE[("DELETE", "/candidates/{candidate_id}")] == "admin"
+    assert ROUTE_MIN_ROLE[("POST", "/admin/purge")] == "admin"
+
+
+def test_default_for_unlisted_get_is_viewer():
+    from rfe.api.rbac import min_role_for
+
+    assert min_role_for("GET", "/anything") == "viewer"
+    assert min_role_for("POST", "/unlisted") == "recruiter"

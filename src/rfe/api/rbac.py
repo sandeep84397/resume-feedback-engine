@@ -44,3 +44,27 @@ def require_role(min_role: str):
             raise HTTPException(status_code=403, detail="insufficient role")
 
     return _guard
+
+
+# Minimum role per (method, path-template). Anything not listed:
+#   GET  -> viewer (read-only)
+#   else -> recruiter (write workflow), unless explicitly admin below.
+ROUTE_MIN_ROLE: dict[tuple[str, str], str] = {
+    ("POST", "/roles"): "recruiter",
+    ("POST", "/roles/{role_id}/rubric/draft"): "recruiter",
+    ("POST", "/roles/{role_id}/rubric/publish"): "recruiter",
+    ("POST", "/roles/{role_id}/candidates"): "recruiter",
+    ("POST", "/candidates/{candidate_id}/evaluate"): "recruiter",
+    ("POST", "/evaluations/{evaluation_id}/feedback/draft"): "recruiter",
+    ("POST", "/feedback/{feedback_id}/approve"): "recruiter",
+    ("POST", "/feedback/{feedback_id}/send"): "recruiter",
+    ("DELETE", "/candidates/{candidate_id}"): "admin",
+    ("POST", "/admin/purge"): "admin",
+}
+
+
+def min_role_for(method: str, path_template: str) -> str:
+    explicit = ROUTE_MIN_ROLE.get((method.upper(), path_template))
+    if explicit:
+        return explicit
+    return "viewer" if method.upper() == "GET" else "recruiter"
