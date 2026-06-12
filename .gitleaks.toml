@@ -1,0 +1,4 @@
+# Use gitleaks' built-in rule set. .env is gitignored; .env.example holds
+# only empty placeholders, so no allowlist exceptions are required.
+[extend]
+useDefault = true
