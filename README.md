@@ -27,11 +27,59 @@ Works with any OpenAI-compatible API (OpenAI, vLLM, Ollama) — bring your own m
 
     .venv/bin/pytest
 
+## Phase 3: Security & Web UI
+
+### PII encryption at rest
+
+Set `RFE_ENCRYPTION_KEY` to a Fernet key and candidate PII (`name`, `email`,
+`resume_text`, `salary_expectation`) is encrypted in the SQLite database.
+Without it, PII is stored in plaintext (not recommended in production).
+
+Generate a key:
+
+    python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+
+> **WARNING: Key loss is permanent data loss.** If you lose `RFE_ENCRYPTION_KEY`,
+> all existing candidate rows become undecryptable. Store it in a secrets
+> manager (AWS Secrets Manager, Vault, etc.), never in this file or the repo.
+
+### Retention auto-purge
+
+`RFE_RETENTION_DAYS` (default `365`) controls how long candidate records are
+kept. Set to `0` to disable. Purge cascades: deletes the candidate's
+evaluations and feedback too.
+
+Trigger a purge: `POST /admin/purge` (admin role required). Candidates with no
+`created_at` (rows created before Phase 3) are never purged — fail safe.
+
+### Right-to-erasure (GDPR/DSAR)
+
+`DELETE /candidates/{id}` (admin role required) cascade-deletes a candidate
+plus their evaluations and feedback. Audit-logged by entity id only — no PII
+in the audit log.
+
+### RBAC
+
+Three roles: `admin` (everything), `recruiter` (+write workflow), `viewer`
+(GET only). Configure `RFE_API_KEYS` with `key:role` pairs:
+
+    RFE_API_KEYS="adminkey:admin,reckey:recruiter,viewkey:viewer"
+
+A bare key (no `:role`) defaults to `admin` — Phase 2 keys keep full access.
+Keys are compared in constant time (HMAC). Unauthorized roles return 403.
+
+### Web UI
+
+Open `http://localhost:8000/` in your browser, paste an API key, and manage
+rubrics, candidates, and feedback. No build step — pure HTML/CSS/JS, no JS
+dependencies. Set `RFE_SERVE_UI=0` to disable.
+
 ## Status
 
-Phase 1 (core engine). Spec: docs/specs/2026-06-12-rejection-feedback-engine-design.md
-Roadmap: persistence (SQLite/Postgres), SMTP + tokenized feedback pages,
-RBAC + encryption, web UI, ATS adapters (Greenhouse/Lever/Ashby).
+Phase 3 complete: encryption at rest, retention purge, right-to-erasure, RBAC,
+web UI. Spec: docs/specs/2026-06-12-rejection-feedback-engine-design.md
+Roadmap: Postgres adapter, KMS key management, key rotation tooling, ATS
+adapters (Greenhouse/Lever/Ashby).
 
 ## Deployment (Docker)
 
@@ -68,7 +116,10 @@ production — see Security). Data (SQLite DB + audit log) persists in the
 | `RFE_LLM_MODEL` | `llama3` | Model name |
 | `RFE_LLM_API_KEY` | _(empty)_ | LLM API key (if required) |
 | `RFE_DB_PATH` | `./rfe.db` | SQLite database file path |
-| `RFE_API_KEYS` | _(empty)_ | Comma-separated valid API keys |
+| `RFE_API_KEYS` | _(empty)_ | Comma-separated `key:role` pairs (`admin`/`recruiter`/`viewer`); bare key = `admin` |
+| `RFE_ENCRYPTION_KEY` | _(empty)_ | Fernet key for PII encryption at rest; unset = plaintext (not recommended) |
+| `RFE_RETENTION_DAYS` | `365` | Auto-purge candidates older than N days; `0` = disabled |
+| `RFE_SERVE_UI` | `1` | Serve web UI at `/`; set to `0` to disable |
 | `RFE_AUDIT_LOG` | `./audit.jsonl` | Append-only audit log path |
 | `RFE_TOKEN_SECRET` | _(empty)_ | HMAC secret for feedback-page tokens |
 | `RFE_TOKEN_TTL_HOURS` | `168` | Feedback token lifetime (hours) |
