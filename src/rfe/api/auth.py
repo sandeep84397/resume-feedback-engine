@@ -14,9 +14,44 @@ from starlette.responses import JSONResponse
 
 PUBLIC_PREFIXES = ("/f/",)
 
+VALID_ROLES = ("admin", "recruiter", "viewer")
+
+
+def parse_api_keymap(raw: str) -> dict[str, str]:
+    """Parse "k1:admin,k2:recruiter,k3:viewer". A bare "k" (no role) -> admin
+    (backward compat with Phase 2). Raises ValueError on an unknown role."""
+    out: dict[str, str] = {}
+    for part in raw.split(","):
+        part = part.strip()
+        if not part:
+            continue
+        key, sep, role = part.partition(":")
+        key = key.strip()
+        role = role.strip() if sep else "admin"
+        if not key:
+            continue
+        if role not in VALID_ROLES:
+            raise ValueError(f"unknown role {role!r}; valid: {VALID_ROLES}")
+        out[key] = role
+    return out
+
+
+def keymap_from_env() -> dict[str, str]:
+    return parse_api_keymap(os.environ.get("RFE_API_KEYS", ""))
+
+
+def role_for_key(presented: str, keymap: dict[str, str]) -> str | None:
+    """Constant-time: compare against every key, never short-circuit. Returns
+    the matched role or None."""
+    matched: str | None = None
+    for key, role in keymap.items():
+        if hmac.compare_digest(presented, key):
+            matched = role
+    return matched
+
 
 def parse_api_keys(raw: str) -> set[str]:
-    return {k.strip() for k in raw.split(",") if k.strip()}
+    return set(parse_api_keymap(raw).keys())
 
 
 def api_keys_from_env() -> set[str]:
