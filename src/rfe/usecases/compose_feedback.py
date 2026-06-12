@@ -4,7 +4,7 @@ from rfe.domain.entities import (Candidate, Evaluation, EvaluationStatus,
                                  Feedback, FeedbackBullet, Rubric)
 from rfe.domain.errors import DomainError, FeedbackValidationError
 from rfe.domain.selection import SALARY_CRITERION_ID, select_unmet_criteria
-from rfe.ports.model_provider import ModelProvider
+from rfe.ports.model_provider import ModelOutputError, ModelProvider
 
 
 class BulletsPayload(BaseModel):
@@ -47,10 +47,14 @@ class ComposeFeedback:
                              f"evidence_found={evidence.get(cid, '')}")
         user_content = "UNMET CRITERIA:\n" + "\n".join(lines)
 
-        last_error: FeedbackValidationError | None = None
-        for _ in range(2):  # one retry on validation failure
-            payload = self._model.complete(
-                COMPOSE_SYSTEM_PROMPT, user_content, BulletsPayload)
+        last_error: Exception | None = None
+        for _ in range(2):  # one retry on invalid model output or validation failure
+            try:
+                payload = self._model.complete(
+                    COMPOSE_SYSTEM_PROMPT, user_content, BulletsPayload)
+            except ModelOutputError as exc:
+                last_error = exc
+                continue
             allowed = set(unmet)
             bad = [b.criterion_id for b in payload.bullets
                    if b.criterion_id not in allowed]

@@ -12,7 +12,7 @@ from rfe.api.ui import build_ui_router
 from rfe.domain.entities import (Candidate, Evaluation, Feedback, Role, Rubric)
 from rfe.domain.errors import DomainError, InvalidTransitionError
 from rfe.ports.deliverer import FeedbackDeliverer
-from rfe.ports.model_provider import ModelProvider
+from rfe.ports.model_provider import ModelOutputError, ModelProvider
 from rfe.ports.repositories import NotFoundError
 from rfe.security.audit import AuditLog
 from rfe.security.clock import Clock, SystemClock
@@ -84,6 +84,12 @@ def build_app(model_provider: ModelProvider,
     @app.exception_handler(DomainError)
     async def domain_error(_, exc):
         return JSONResponse(status_code=422, content={"detail": str(exc)})
+
+    @app.exception_handler(ModelOutputError)
+    async def model_output_error(_, exc):
+        return JSONResponse(status_code=503, content={
+            "detail": "the LLM returned invalid output after retry; "
+                      "try again or check the configured model"})
 
     # RBAC: only add role guards when api_keys are configured.
     # When api_keys is None/empty, RBAC is disabled — all routes are open.

@@ -69,3 +69,20 @@ def test_no_unmet_criteria_raises():
     with pytest.raises(DomainError):
         ComposeFeedback(MockModelProvider([LINKED])).execute(
             make_candidate(), make_rubric(), ev, feedback_id="f1")
+
+
+def test_model_output_error_then_valid_recovers_on_retry():
+    from rfe.ports.model_provider import ModelOutputError
+    mock = MockModelProvider([ModelOutputError("schema echo"), LINKED])
+    fb = ComposeFeedback(mock).execute(make_candidate(), make_rubric(),
+                                       make_evaluation(), feedback_id="f1")
+    assert fb.bullets[0].criterion_id == "k8s"
+
+
+def test_model_output_error_twice_raises_model_output_error():
+    from rfe.ports.model_provider import ModelOutputError
+    mock = MockModelProvider([ModelOutputError("bad"), ModelOutputError("bad")])
+    with pytest.raises(ModelOutputError):
+        ComposeFeedback(mock).execute(make_candidate(), make_rubric(),
+                                      make_evaluation(), feedback_id="f1")
+    assert len(mock.calls) == 2

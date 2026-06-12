@@ -30,8 +30,10 @@ class OpenAICompatProvider:
 
     def complete(self, system_prompt: str, user_content: str, schema: type[T]) -> T:
         instruction = (
-            f"{system_prompt}\n\nRespond with ONLY a JSON object matching this "
-            f"JSON schema:\n{json.dumps(schema.model_json_schema())}"
+            f"{system_prompt}\n\nRespond with ONLY a JSON object that is an "
+            f"INSTANCE conforming to this JSON schema — do NOT echo the schema "
+            f"itself, and never include keys like '$schema' or 'properties':\n"
+            f"{json.dumps(schema.model_json_schema())}"
         )
         try:
             resp = self._client.post("/chat/completions", json={
