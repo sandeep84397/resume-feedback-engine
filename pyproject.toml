@@ -1,0 +1,24 @@
+[project]
+name = "rfe"
+version = "0.1.0"
+description = "Rejection Feedback Engine - open-source, rubric-based candidate feedback"
+requires-python = ">=3.12"
+dependencies = [
+    "pydantic>=2.7",
+    "fastapi>=0.111",
+    "httpx>=0.27",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.2"]
+
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
