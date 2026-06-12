@@ -1,0 +1,16 @@
+services:
+  rfe:
+    build: .
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    volumes:
+      - rfe-data:/app/data
+    environment:
+      RFE_DB_PATH: /app/data/rfe.db
+      RFE_AUDIT_LOG: /app/data/audit.jsonl
+    restart: unless-stopped
+
+volumes:
+  rfe-data:

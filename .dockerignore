@@ -1,8 +1,11 @@
+.venv/
 __pycache__/
 *.pyc
-.venv/
-.env
-*.egg-info/
 .pytest_cache/
+.git/
+*.egg-info/
+tests/
+docs/
+.env
 *.db
 *.jsonl
