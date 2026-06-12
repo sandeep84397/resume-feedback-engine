@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime
 from enum import Enum
 from typing import Any
 
@@ -96,6 +97,7 @@ class Candidate(BaseModel):
     email: str
     resume_text: str
     salary_expectation: float | None = None
+    created_at: datetime | None = None
 
     @field_validator("resume_text")
     @classmethod
