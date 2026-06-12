@@ -27,3 +27,56 @@ def test_unpublished_rubric_allows_criteria_changes():
     rubric = Rubric(id="r1", role_id="role1", criteria=[make_criterion()])
     rubric.replace_criteria([make_criterion("c2")])
     assert rubric.criteria[0].id == "c2"
+
+
+# --- New immutability tests ---
+
+def test_post_publish_field_assignment_raises():
+    """Direct field assignment on a published rubric must raise RubricImmutableError."""
+    rubric = Rubric(id="r1", role_id="role1", criteria=[make_criterion()])
+    rubric.publish()
+    with pytest.raises(RubricImmutableError):
+        rubric.salary_band_min = 999
+
+
+def test_post_publish_criteria_append_impossible():
+    """criteria after publish must be immutable — append should raise."""
+    rubric = Rubric(id="r1", role_id="role1", criteria=[make_criterion()])
+    rubric.publish()
+    with pytest.raises((TypeError, AttributeError)):
+        rubric.criteria.append(make_criterion("c2"))
+
+
+def test_post_publish_criteria_assignment_raises():
+    """Direct criteria reassignment on published rubric raises RubricImmutableError."""
+    rubric = Rubric(id="r1", role_id="role1", criteria=[make_criterion()])
+    rubric.publish()
+    with pytest.raises(RubricImmutableError):
+        rubric.criteria = []
+
+
+# --- Salary band validator ---
+
+def test_salary_band_min_greater_than_max_raises():
+    """salary_band_min > salary_band_max must raise at construction."""
+    with pytest.raises((ValueError, DomainError)):
+        Rubric(id="r1", role_id="role1", salary_band_min=100000, salary_band_max=50000)
+
+
+def test_salary_band_equal_is_ok():
+    r = Rubric(id="r1", role_id="role1", salary_band_min=50000, salary_band_max=50000)
+    assert r.salary_band_min == r.salary_band_max
+
+
+def test_salary_band_none_is_ok():
+    r = Rubric(id="r1", role_id="role1")
+    assert r.salary_band_min is None
+    assert r.salary_band_max is None
+
+
+# --- Reserved criterion id ---
+
+def test_reserved_criterion_id_raises():
+    """Criterion id 'salary_band' is reserved and must be rejected at construction."""
+    with pytest.raises((ValueError, DomainError)):
+        Criterion(id="salary_band", name="Salary Band")

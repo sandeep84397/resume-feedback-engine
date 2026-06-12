@@ -1,10 +1,13 @@
 from __future__ import annotations
 
 from enum import Enum
+from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 from rfe.domain.errors import DomainError, InvalidTransitionError, RubricImmutableError
+
+SALARY_CRITERION_ID = "salary_band"
 
 
 class CriterionType(str, Enum):
@@ -19,20 +22,56 @@ class Criterion(BaseModel):
     type: CriterionType = CriterionType.WEIGHTED
     weight: float = 1.0
 
+    @field_validator("id")
+    @classmethod
+    def _reject_reserved_id(cls, v: str) -> str:
+        if v == SALARY_CRITERION_ID:
+            raise ValueError(
+                f"criterion id '{SALARY_CRITERION_ID}' is reserved; use a different id"
+            )
+        return v
+
 
 class Rubric(BaseModel):
     id: str
     role_id: str
     version: int = 1
-    criteria: list[Criterion] = Field(default_factory=list)
+    criteria: list[Criterion] | tuple[Criterion, ...] = Field(default_factory=list)
     salary_band_min: float | None = None
     salary_band_max: float | None = None
     published: bool = False
 
+    @model_validator(mode="after")
+    def _validate_salary_band(self) -> "Rubric":
+        if (
+            self.salary_band_min is not None
+            and self.salary_band_max is not None
+            and self.salary_band_min > self.salary_band_max
+        ):
+            raise ValueError(
+                f"salary_band_min ({self.salary_band_min}) must be <= "
+                f"salary_band_max ({self.salary_band_max})"
+            )
+        return self
+
+    def __setattr__(self, name: str, value: Any) -> None:
+        # Allow the publish() flip: setting published from False → True
+        if name == "published" and not self.__dict__.get("published", False):
+            super().__setattr__(name, value)
+            return
+        if self.__dict__.get("published", False):
+            raise RubricImmutableError(
+                "published rubric is immutable; create a new version"
+            )
+        super().__setattr__(name, value)
+
     def publish(self) -> None:
         if not self.criteria:
             raise DomainError("cannot publish a rubric with no criteria")
-        self.published = True
+        # Use object.__setattr__ to bypass our guard for the publish flip itself
+        object.__setattr__(self, "published", True)
+        # Freeze criteria as tuple so in-place append is impossible
+        object.__setattr__(self, "criteria", tuple(self.criteria))
 
     def replace_criteria(self, criteria: list[Criterion]) -> None:
         if self.published:
