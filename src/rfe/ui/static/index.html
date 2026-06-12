@@ -1,3 +1,80 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8">
-<title>Rejection Feedback Engine</title></head><body>
-<div id="app"></div></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Rejection Feedback Engine</title>
+  <link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+  <header>
+    <h1>Rejection Feedback Engine</h1>
+    <div class="keybar">
+      <input id="api-key" type="password" placeholder="API key" autocomplete="off">
+      <button id="save-key">Connect</button>
+      <span id="role-badge" class="badge"></span>
+    </div>
+  </header>
+
+  <nav id="nav" hidden>
+    <button data-view="roles">Roles</button>
+    <button data-view="rubric">Rubric</button>
+    <button data-view="candidates">Candidates</button>
+    <button data-view="evaluations">Evaluations</button>
+    <button data-view="feedback">Feedback queue</button>
+  </nav>
+
+  <main hidden>
+    <section id="view-roles" class="view">
+      <h2>Roles</h2>
+      <form id="role-form">
+        <input name="title" placeholder="Role title" required>
+        <input name="description" placeholder="Description">
+        <button>Create role</button>
+      </form>
+      <ul id="role-list"></ul>
+    </section>
+
+    <section id="view-rubric" class="view" hidden>
+      <h2>Rubric editor</h2>
+      <p>Role: <select id="rubric-role"></select>
+         <button id="draft-from-jd">Draft from JD</button></p>
+      <table id="criteria-table">
+        <thead><tr><th>id</th><th>name</th><th>type</th><th>weight</th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <button id="add-criterion">Add criterion</button>
+      <p>Salary band:
+         <input id="salary-min" type="number" placeholder="min">
+         <input id="salary-max" type="number" placeholder="max"></p>
+      <button id="publish-rubric">Publish</button>
+    </section>
+
+    <section id="view-candidates" class="view" hidden>
+      <h2>Candidates</h2>
+      <form id="candidate-form">
+        <select id="candidate-role"></select>
+        <input name="name" placeholder="Name" required>
+        <input name="email" type="email" placeholder="Email" required>
+        <input name="salary_expectation" type="number" placeholder="Salary expectation">
+        <textarea name="resume_text" placeholder="Paste resume text" required></textarea>
+        <button>Add candidate</button>
+      </form>
+      <ul id="candidate-list"></ul>
+    </section>
+
+    <section id="view-evaluations" class="view" hidden>
+      <h2>Evaluations</h2>
+      <ul id="evaluation-list"></ul>
+    </section>
+
+    <section id="view-feedback" class="view" hidden>
+      <h2>Feedback approval queue</h2>
+      <ul id="feedback-list"></ul>
+    </section>
+  </main>
+
+  <div id="toast" class="toast" hidden></div>
+  <script src="/static/app.js"></script>
+</body>
+</html>

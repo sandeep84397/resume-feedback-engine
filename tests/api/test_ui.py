@@ -32,3 +32,12 @@ def test_static_js_served_with_type():
 
 def test_unknown_static_is_404():
     assert client().get("/static/nope.txt").status_code == 404
+
+
+def test_index_has_key_entry_and_views():
+    body = client().get("/").text
+    for marker in ('id="api-key"', 'id="view-roles"', 'id="view-rubric"',
+                   'id="view-candidates"', 'id="view-evaluations"',
+                   'id="view-feedback"', 'id="toast"',
+                   'src="/static/app.js"', 'href="/static/app.css"'):
+        assert marker in body, marker
