@@ -41,3 +41,16 @@ def test_index_has_key_entry_and_views():
                    'id="view-feedback"', 'id="toast"',
                    'src="/static/app.js"', 'href="/static/app.css"'):
         assert marker in body, marker
+
+
+def test_app_js_has_fetch_wrapper_and_handlers():
+    js = client().get("/static/app.js").text
+    for marker in ("X-API-Key", "localStorage", "function api",
+                   "/roles", "/evaluate", "/feedback", "toast",
+                   "401", "403", "409", "422"):
+        assert marker in js, marker
+
+
+def test_app_js_under_size_budget():
+    js = client().get("/static/app.js").text
+    assert js.count("\n") <= 400, "app.js must stay under ~400 lines"
