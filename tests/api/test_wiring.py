@@ -71,3 +71,85 @@ def test_build_app_with_auth_requires_key():
     ok = client.post("/roles", json={"title": "X"},
                      headers={"X-API-Key": "key-a"})
     assert ok.status_code == 200
+
+
+# --- Phase 3 Wiring tests ---
+
+from cryptography.fernet import Fernet
+
+from rfe.adapters.persistence.encrypted_repo import EncryptedCandidateRepository
+from rfe.security.crypto import FieldCipher
+
+
+def test_build_app_still_backward_compatible_no_args():
+    # bare call shape unchanged
+    client = TestClient(build_app(model_provider=mock_provider()))
+    assert client.post("/roles", json={"title": "X"}).status_code == 200
+
+
+def test_created_at_stamped_on_candidate_create():
+    clock = FixedClock(datetime(2026, 6, 1, tzinfo=timezone.utc))
+    client = TestClient(build_app(model_provider=mock_provider(), clock=clock))
+    role = client.post("/roles", json={"title": "SRE"}).json()
+    cand = client.post(f"/roles/{role['id']}/candidates",
+                       json={"name": "A", "email": "a@x.com",
+                             "resume_text": "hi"}).json()
+    assert cand["created_at"].startswith("2026-06-01")
+
+
+def test_rbac_viewer_blocked_from_write():
+    client = TestClient(build_app(model_provider=mock_provider(),
+                                  api_keys={"vk": "viewer"}))
+    assert client.post("/roles", json={"title": "X"},
+                       headers={"X-API-Key": "vk"}).status_code == 403
+
+
+def test_rbac_recruiter_can_write_but_not_delete():
+    client = TestClient(build_app(model_provider=mock_provider(),
+                                  api_keys={"rk": "recruiter"}))
+    h = {"X-API-Key": "rk"}
+    role = client.post("/roles", json={"title": "X"}, headers=h).json()
+    cand = client.post(f"/roles/{role['id']}/candidates",
+                       json={"name": "A", "email": "a@x.com", "resume_text": "hi"},
+                       headers=h).json()
+    assert client.delete(f"/candidates/{cand['id']}", headers=h).status_code == 403
+
+
+def test_admin_can_erase_candidate():
+    client = TestClient(build_app(model_provider=mock_provider(),
+                                  api_keys={"ak": "admin"}))
+    h = {"X-API-Key": "ak"}
+    role = client.post("/roles", json={"title": "X"}, headers=h).json()
+    cand = client.post(f"/roles/{role['id']}/candidates",
+                       json={"name": "A", "email": "a@x.com", "resume_text": "hi"},
+                       headers=h).json()
+    assert client.delete(f"/candidates/{cand['id']}", headers=h).status_code in (200, 204)
+
+
+def test_bare_set_api_keys_still_admin():
+    # Phase 2 call shape: api_keys as a set -> every key is admin
+    client = TestClient(build_app(model_provider=mock_provider(),
+                                  api_keys={"key-a"}))
+    assert client.post("/roles", json={"title": "X"}).status_code == 401
+    assert client.post("/roles", json={"title": "X"},
+                       headers={"X-API-Key": "key-a"}).status_code == 200
+
+
+def test_ui_served_when_enabled():
+    client = TestClient(build_app(model_provider=mock_provider(), serve_ui=True))
+    r = client.get("/")
+    assert r.status_code == 200 and "text/html" in r.headers["content-type"]
+
+
+def test_encrypted_candidate_repo_used_when_cipher_passed(tmp_path):
+    conn = open_connection(str(tmp_path / "w.db"))
+    backing = SqliteRepository(conn, Candidate, "candidates")
+    repos = {"candidates": EncryptedCandidateRepository(
+        backing, FieldCipher(Fernet.generate_key()))}
+    client = TestClient(build_app(model_provider=mock_provider(), repos=repos))
+    role = client.post("/roles", json={"title": "X"}).json()
+    client.post(f"/roles/{role['id']}/candidates",
+                json={"name": "Secret", "email": "s@x.com", "resume_text": "hi"})
+    raw = conn.execute("SELECT payload FROM candidates").fetchone()[0]
+    assert "s@x.com" not in raw   # encrypted at rest
+    conn.close()
