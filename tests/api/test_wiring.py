@@ -164,3 +164,12 @@ def test_ui_shell_public_when_auth_enabled():
     assert client.post("/roles", json={"title": "SRE"}).status_code == 401
     assert client.post("/roles", json={"title": "SRE"},
                        headers={"X-API-Key": "ak"}).status_code == 200
+
+
+def test_list_roles_viewer_accessible():
+    client = TestClient(build_app(model_provider=mock_provider(),
+                                  api_keys={"vk": "viewer", "rk": "recruiter"}))
+    client.post("/roles", json={"title": "SRE"}, headers={"X-API-Key": "rk"})
+    resp = client.get("/roles", headers={"X-API-Key": "vk"})
+    assert resp.status_code == 200
+    assert resp.json()[0]["title"] == "SRE"

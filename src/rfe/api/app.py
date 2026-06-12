@@ -86,8 +86,13 @@ def build_app(model_provider: ModelProvider,
 
     # RBAC: only add role guards when api_keys are configured.
     # When api_keys is None/empty, RBAC is disabled — all routes are open.
+    _viewer_guard = ([Depends(require_role("viewer"))] if api_keys else [])
     _recruiter_guard = ([Depends(require_role("recruiter"))] if api_keys else [])
     _admin_guard = ([Depends(require_role("admin"))] if api_keys else [])
+
+    @app.get("/roles", dependencies=_viewer_guard)
+    def list_roles() -> list[Role]:
+        return roles.list()
 
     @app.post("/roles", dependencies=_recruiter_guard)
     def create_role(body: RoleIn) -> Role:

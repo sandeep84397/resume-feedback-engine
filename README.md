@@ -94,8 +94,10 @@ production — see Security). Data (SQLite DB + audit log) persists in the
 
 - **No candidate data leaves your infra** — self-hosted, bring-your-own-LLM.
 - **API-key auth:** every endpoint except the public feedback page (`/f/{token}`)
-  requires `X-API-Key`. Set `RFE_API_KEYS` (comma-separated). Keys are
-  compared in constant time.
+  and the UI shell (`/`, `/static/`) requires `X-API-Key`. Set `RFE_API_KEYS`
+  (comma-separated `key` or `key:role`). Keys are compared in constant time.
+  **If `RFE_API_KEYS` is unset, auth is DISABLED and every route is open —
+  development only. Never deploy to production without keys configured.**
 - **Tokenized feedback page:** `/f/{token}` serves a single read-only page.
   Tokens are HMAC-signed and expire (`RFE_TOKEN_TTL_HOURS`, default 168h).
   A bad/expired/unknown token returns 404 — no enumeration.
