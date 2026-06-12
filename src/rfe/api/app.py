@@ -22,6 +22,7 @@ from rfe.usecases.deliver_feedback import DeliverFeedback
 from rfe.usecases.draft_rubric import DraftRubric
 from rfe.usecases.erase_candidate import EraseCandidate
 from rfe.usecases.evaluate_candidate import EvaluateCandidate
+from rfe.usecases.compute_stats import compute_stats
 from rfe.usecases.purge_candidates import PurgeCandidates
 
 
@@ -171,6 +172,28 @@ def build_app(model_provider: ModelProvider,
             "candidates_deleted": report.candidates_deleted,
             "evaluations_deleted": report.evaluations_deleted,
             "feedbacks_deleted": report.feedbacks_deleted,
+        }
+
+    @app.get("/admin/stats", dependencies=_admin_guard)
+    def admin_stats():
+        # Supports external bias audits (e.g. NYC LL144): returns aggregate
+        # counts and rates only. Contains NO candidate PII. Auditors join
+        # these aggregates with their own demographic data to assess disparate
+        # impact. The engine stores no demographic data.
+        stats = compute_stats(evaluations.list())
+        return {
+            "evaluations": stats.evaluations,
+            "needs_human": stats.needs_human,
+            "salary_mismatch_rate": stats.salary_mismatch_rate,
+            "criteria": [
+                {
+                    "criterion_id": cs.criterion_id,
+                    "evaluated": cs.evaluated,
+                    "avg_score": cs.avg_score,
+                    "pass_rate": cs.pass_rate,
+                }
+                for cs in stats.criteria.values()
+            ],
         }
 
     if serve_ui:

@@ -74,6 +74,16 @@ Open `http://localhost:8000/` in your browser, paste an API key, and manage
 rubrics, candidates, and feedback. No build step — pure HTML/CSS/JS, no JS
 dependencies. Set `RFE_SERVE_UI=0` to disable.
 
+## Bias audit support
+
+`GET /admin/stats` (admin role required) returns aggregate evaluation metrics
+with no candidate PII: total evaluation count, needs-human count,
+salary-mismatch rate, and per-criterion evaluated count, average score, and
+pass rate. This is designed to support external bias audits such as those
+required under NYC Local Law 144 and similar automated-employment-decision-tool
+regulations. The engine stores no demographic data; auditors join these
+aggregates with their own applicant-pool data to assess disparate impact.
+
 ## Status
 
 Phase 3 complete: encryption at rest, retention purge, right-to-erasure, RBAC,
