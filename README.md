@@ -86,9 +86,16 @@ adapters (Greenhouse/Lever/Ashby).
     cp .env.example .env        # fill in your values (never commit .env)
     docker compose up --build
 
-The app listens on `:8000` (run behind a TLS-terminating reverse proxy in
-production — see Security). Data (SQLite DB + audit log) persists in the
-`rfe-data` volume.
+TLS is on by default. Caddy terminates HTTPS and proxies to the app container
+(port 8000 is not published to the host directly).
+
+- **localhost (default):** Caddy issues a self-signed certificate. Your browser
+  will warn; proceed through the warning or trust the cert for local testing.
+- **Real domain:** set `RFE_DOMAIN=rfe.example.com` in `.env` before starting.
+  Caddy will provision a Let's Encrypt certificate automatically — port 443
+  must be reachable from the internet for the ACME challenge.
+
+Data (SQLite DB + audit log) persists in the `rfe-data` volume.
 
 ## Security notes
 
@@ -132,3 +139,4 @@ production — see Security). Data (SQLite DB + audit log) persists in the
 | `RFE_SMTP_FROM` | `no-reply@localhost` | From address (use a no-reply address) |
 | `RFE_WEBHOOK_URL` | _(unset)_ | Outbound webhook receiver URL |
 | `RFE_WEBHOOK_SECRET` | _(empty)_ | HMAC secret for webhook signatures |
+| `RFE_DOMAIN` | `localhost` | Caddy TLS domain; `localhost` = self-signed; real domain = Let's Encrypt |
