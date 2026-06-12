@@ -62,6 +62,7 @@ ROUTE_MIN_ROLE: dict[tuple[str, str], str] = {
     ("POST", "/feedback/{feedback_id}/send"): "recruiter",
     ("DELETE", "/candidates/{candidate_id}"): "admin",
     ("POST", "/admin/purge"): "admin",
+    ("GET", "/admin/stats"): "admin",
 }
 
 
