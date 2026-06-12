@@ -6,11 +6,15 @@ from pydantic import BaseModel
 
 from rfe.adapters.delivery.console import ConsoleDeliverer
 from rfe.adapters.persistence.memory import InMemoryRepository
+from rfe.api.auth import ApiKeyAuthMiddleware
+from rfe.api.feedback_page import build_feedback_router
 from rfe.domain.entities import (Candidate, Evaluation, Feedback, Role, Rubric)
 from rfe.domain.errors import DomainError, InvalidTransitionError
 from rfe.ports.deliverer import FeedbackDeliverer
 from rfe.ports.model_provider import ModelProvider
 from rfe.ports.repositories import NotFoundError
+from rfe.security.audit import AuditLog
+from rfe.security.tokens import TokenSigner
 from rfe.usecases.compose_feedback import ComposeFeedback
 from rfe.usecases.deliver_feedback import DeliverFeedback
 from rfe.usecases.draft_rubric import DraftRubric
@@ -30,19 +34,28 @@ class CandidateIn(BaseModel):
 
 
 def build_app(model_provider: ModelProvider,
-              deliverer: FeedbackDeliverer | None = None) -> FastAPI:
+              deliverer: FeedbackDeliverer | None = None,
+              repos: dict | None = None,
+              audit: AuditLog | None = None,
+              api_keys: set[str] | None = None,
+              token_signer: TokenSigner | None = None) -> FastAPI:
     app = FastAPI(title="Rejection Feedback Engine")
 
-    roles: InMemoryRepository[Role] = InMemoryRepository()
-    rubrics: InMemoryRepository[Rubric] = InMemoryRepository()
-    candidates: InMemoryRepository[Candidate] = InMemoryRepository()
-    evaluations: InMemoryRepository[Evaluation] = InMemoryRepository()
-    feedbacks: InMemoryRepository[Feedback] = InMemoryRepository()
+    repos = repos or {}
+    roles = repos.get("roles") or InMemoryRepository()
+    rubrics = repos.get("rubrics") or InMemoryRepository()
+    candidates = repos.get("candidates") or InMemoryRepository()
+    evaluations = repos.get("evaluations") or InMemoryRepository()
+    feedbacks = repos.get("feedbacks") or InMemoryRepository()
 
     draft_rubric = DraftRubric(model_provider)
     evaluate = EvaluateCandidate(model_provider)
     compose = ComposeFeedback(model_provider)
     deliver = DeliverFeedback(deliverer or ConsoleDeliverer())
+
+    def _audit(action: str, entity_id: str) -> None:
+        if audit is not None:
+            audit.record(action, entity_id)
 
     def rubric_for_role(role_id: str) -> Rubric:
         for r in rubrics.list():
@@ -80,6 +93,7 @@ def build_app(model_provider: ModelProvider,
         rubric = rubric_for_role(role_id)
         rubric.publish()
         rubrics.save(rubric)
+        _audit("publish", rubric.id)
         return rubric
 
     @app.post("/roles/{role_id}/candidates")
@@ -111,6 +125,7 @@ def build_app(model_provider: ModelProvider,
         fb = feedbacks.get(feedback_id)
         fb.approve()
         feedbacks.save(fb)
+        _audit("approve", fb.id)
         return fb
 
     @app.post("/feedback/{feedback_id}/send")
@@ -118,6 +133,13 @@ def build_app(model_provider: ModelProvider,
         fb = feedbacks.get(feedback_id)
         deliver.execute(candidates.get(fb.candidate_id), fb)
         feedbacks.save(fb)
+        _audit("send", fb.id)
         return fb
+
+    if token_signer is not None:
+        app.include_router(build_feedback_router(feedbacks, token_signer))
+
+    if api_keys:
+        app.add_middleware(ApiKeyAuthMiddleware, api_keys=api_keys)
 
     return app
