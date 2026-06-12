@@ -15,7 +15,8 @@ from starlette.responses import JSONResponse
 
 from rfe.api.auth import role_for_key
 
-PUBLIC_PREFIXES = ("/f/",)
+PUBLIC_PREFIXES = ("/f/", "/static/")
+PUBLIC_PATHS = ("/",)  # exact match only — the SPA shell where the key is entered
 _RANK = {"viewer": 1, "recruiter": 2, "admin": 3}
 
 
@@ -25,7 +26,8 @@ class RoleResolverMiddleware(BaseHTTPMiddleware):
         self._keymap = keymap
 
     async def dispatch(self, request: Request, call_next):
-        if request.url.path.startswith(PUBLIC_PREFIXES):
+        path = request.url.path
+        if path in PUBLIC_PATHS or path.startswith(PUBLIC_PREFIXES):
             return await call_next(request)
         presented = request.headers.get("X-API-Key", "")
         role = role_for_key(presented, self._keymap) if presented else None

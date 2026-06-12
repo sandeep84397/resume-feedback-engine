@@ -153,3 +153,14 @@ def test_encrypted_candidate_repo_used_when_cipher_passed(tmp_path):
     raw = conn.execute("SELECT payload FROM candidates").fetchone()[0]
     assert "s@x.com" not in raw   # encrypted at rest
     conn.close()
+
+
+def test_ui_shell_public_when_auth_enabled():
+    # blocker regression: key-entry SPA must load without a key; API stays guarded
+    client = TestClient(build_app(model_provider=mock_provider(), serve_ui=True,
+                                  api_keys={"ak": "admin"}))
+    assert client.get("/").status_code == 200
+    assert client.get("/static/app.js").status_code == 200
+    assert client.post("/roles", json={"title": "SRE"}).status_code == 401
+    assert client.post("/roles", json={"title": "SRE"},
+                       headers={"X-API-Key": "ak"}).status_code == 200
