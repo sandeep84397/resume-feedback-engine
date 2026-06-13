@@ -71,6 +71,7 @@ def test_policy_covers_workflow_routes():
     # GET (read) routes are viewer; write workflow is recruiter; destructive is admin
     assert ROUTE_MIN_ROLE[("POST", "/roles")] == "recruiter"
     assert ROUTE_MIN_ROLE[("POST", "/roles/{role_id}/rubric/publish")] == "recruiter"
+    assert ROUTE_MIN_ROLE[("POST", "/resume/extract")] == "recruiter"
     assert ROUTE_MIN_ROLE[("POST", "/candidates/{candidate_id}/evaluate")] == "recruiter"
     assert ROUTE_MIN_ROLE[("POST", "/feedback/{feedback_id}/approve")] == "recruiter"
     assert ROUTE_MIN_ROLE[("POST", "/feedback/{feedback_id}/send")] == "recruiter"

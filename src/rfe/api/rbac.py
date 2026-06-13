@@ -56,6 +56,7 @@ ROUTE_MIN_ROLE: dict[tuple[str, str], str] = {
     ("POST", "/roles/{role_id}/rubric/draft"): "recruiter",
     ("POST", "/roles/{role_id}/rubric/publish"): "recruiter",
     ("POST", "/roles/{role_id}/candidates"): "recruiter",
+    ("POST", "/resume/extract"): "recruiter",
     ("POST", "/candidates/{candidate_id}/evaluate"): "recruiter",
     ("POST", "/evaluations/{evaluation_id}/feedback/draft"): "recruiter",
     ("POST", "/feedback/{feedback_id}/approve"): "recruiter",
