@@ -14,6 +14,23 @@ writes the words. No candidate data leaves your infrastructure.
    rejects any reason not linked to the published rubric.
 5. A human approves; then it's delivered.
 
+## Easiest start (one command)
+
+For non-technical users (e.g. recruiters). Installs nothing system-wide except,
+if missing, Python and Ollama (it tells you what to do); then sets everything up
+and opens the web page automatically. Safe to re-run.
+
+**macOS / Linux:**
+
+    ./run.sh
+
+**Windows** (right-click `run.ps1` → "Run with PowerShell", or):
+
+    powershell -ExecutionPolicy Bypass -File run.ps1
+
+First run downloads a few GB (the local AI model) and takes a few minutes.
+After that it starts in seconds. Press `Ctrl+C` in the terminal to stop.
+
 ## Quick start (free, local LLM via Ollama)
 
     python3 -m venv .venv && .venv/bin/pip install -e '.[dev]' uvicorn
