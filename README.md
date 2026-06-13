@@ -107,10 +107,10 @@ aggregates with their own applicant-pool data to assess disparate impact.
 
 ## Status
 
-Phase 3 complete: encryption at rest, retention purge, right-to-erasure, RBAC,
-web UI. Spec: docs/specs/2026-06-12-rejection-feedback-engine-design.md
-Roadmap: Postgres adapter, KMS key management, key rotation tooling, ATS
-adapters (Greenhouse/Lever/Ashby).
+Working core: rubric definition, resume evaluation, criterion-based feedback,
+encryption at rest, retention purge, right-to-erasure, RBAC, rate limiting,
+web UI. Roadmap: Postgres adapter, key rotation tooling, ATS adapters
+(Greenhouse/Lever/Ashby) — see open issues.
 
 ## Deployment (Docker)
 
