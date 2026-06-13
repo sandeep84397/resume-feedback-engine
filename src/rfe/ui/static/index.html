@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Rejection Feedback Engine</title>
-  <link rel="stylesheet" href="/static/app.css">
+  <link rel="stylesheet" href="/static/app.css?v=20260613-6">
 </head>
 <body>
   <header>
@@ -12,6 +12,7 @@
     <div class="keybar">
       <input id="api-key" type="password" placeholder="API key" autocomplete="off">
       <button id="save-key">Connect</button>
+      <button id="clear-local-drafts">Clear local drafts</button>
       <span id="role-badge" class="badge"></span>
     </div>
   </header>
@@ -47,6 +48,10 @@
       <p>Salary band:
          <input id="salary-min" type="number" placeholder="min">
          <input id="salary-max" type="number" placeholder="max"></p>
+      <p>Experience/level:
+         <input id="experience-min" type="number" placeholder="min years">
+         <input id="experience-max" type="number" placeholder="max years">
+         <input id="allowed-levels" placeholder="SDE 2, SDE 3"></p>
       <button id="publish-rubric">Publish</button>
     </section>
 
@@ -57,9 +62,16 @@
         <input name="name" placeholder="Name" required>
         <input name="email" type="email" placeholder="Email" required>
         <input name="salary_expectation" type="number" placeholder="Salary expectation">
+        <input name="years_experience" type="number" placeholder="Years experience">
+        <input name="current_level" placeholder="Current level">
+        <input id="resume-file" type="file" accept=".txt,.md,.pdf">
         <textarea name="resume_text" placeholder="Paste resume text" required></textarea>
         <button>Add candidate</button>
       </form>
+      <div id="evaluation-progress" class="progress-panel" hidden aria-live="polite">
+        <progress></progress>
+        <span id="evaluation-progress-text"></span>
+      </div>
       <ul id="candidate-list"></ul>
     </section>
 
@@ -75,6 +87,6 @@
   </main>
 
   <div id="toast" class="toast" hidden></div>
-  <script src="/static/app.js"></script>
+  <script src="/static/app.js?v=20260613-6"></script>
 </body>
 </html>

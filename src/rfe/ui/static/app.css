@@ -24,6 +24,10 @@ th, td { text-align:left; padding:.35rem .5rem; border-bottom:1px solid #2a3242;
 ul { list-style:none; padding:0; }
 li { background:var(--card); border:1px solid #2a3242; border-radius:6px;
   padding:.6rem .8rem; margin-bottom:.5rem; }
+.progress-panel { display:flex; align-items:center; gap:.6rem; width:100%;
+  background:var(--card); border:1px solid #2a3242; border-radius:6px;
+  padding:.6rem .8rem; margin:.3rem 0 1rem; color:var(--muted); }
+.progress-panel progress { width:180px; height:.7rem; accent-color:var(--accent); }
 .badge { padding:.15rem .5rem; border-radius:10px; font-size:.75rem; background:#2a3242; color:var(--muted); }
 .badge.drafted { background:#2a3242; color:var(--warn); }
 .badge.approved { background:#173d2a; color:var(--ok); }
