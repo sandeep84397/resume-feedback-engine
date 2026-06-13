@@ -70,3 +70,12 @@ def test_rejects_large_resume_upload():
     })
 
     assert resp.status_code == 422
+
+
+def test_oversized_base64_rejected_before_decode():
+    # ~3MB of base64 'A's — must be rejected on encoded length, not after decode
+    huge = "A" * (3 * 1024 * 1024)
+    resp = client().post("/resume/extract",
+                         json={"filename": "big.txt", "content_base64": huge})
+    assert resp.status_code == 422
+    assert "2 MB" in resp.json()["detail"]

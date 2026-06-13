@@ -11,6 +11,7 @@ from pydantic import BaseModel, Field
 from rfe.adapters.delivery.console import ConsoleDeliverer
 from rfe.adapters.persistence.memory import InMemoryRepository
 from rfe.api.feedback_page import build_feedback_router
+from rfe.api.rate_limit import RateLimitMiddleware
 from rfe.api.rbac import RoleResolverMiddleware, require_role
 from rfe.api.ui import build_ui_router
 from rfe.domain.entities import (Candidate, Criterion, Evaluation, Feedback,
@@ -74,8 +75,10 @@ def build_app(model_provider: ModelProvider,
               token_signer: TokenSigner | None = None,
               clock: Clock | None = None,
               serve_ui: bool = False,
-              retention_days: int = 365) -> FastAPI:
-    app = FastAPI(title="Rejection Feedback Engine")
+              retention_days: int = 365,
+              rate_limit: int | None = None,
+              rate_window_seconds: int = 60) -> FastAPI:
+    app = FastAPI(title="Resume Feedback Engine")
 
     repos = repos or {}
     roles = repos.get("roles") or InMemoryRepository()
@@ -204,6 +207,11 @@ def build_app(model_provider: ModelProvider,
         suffix = body.filename.lower().rsplit(".", 1)[-1]
         if suffix not in {"pdf", "txt", "md"}:
             raise DomainError("resume file must be .txt, .md, or .pdf")
+        # Bound the encoded payload BEFORE decoding so an oversized body is
+        # never fully materialized in memory. base64 inflates ~4/3, so cap the
+        # encoded length accordingly.
+        if len(body.content_base64) > (_MAX_RESUME_BYTES * 4) // 3 + 4:
+            raise DomainError("resume file must be 2 MB or smaller")
         try:
             data = base64.b64decode(body.content_base64, validate=True)
         except (binascii.Error, ValueError) as exc:
@@ -304,5 +312,10 @@ def build_app(model_provider: ModelProvider,
         keymap = ({k: "admin" for k in api_keys} if isinstance(api_keys, set)
                   else dict(api_keys))
         app.add_middleware(RoleResolverMiddleware, keymap=keymap)
+
+    if rate_limit:
+        # Added last so it wraps everything (runs first per request).
+        app.add_middleware(RateLimitMiddleware, clock=_clock,
+                           limit=rate_limit, window_seconds=rate_window_seconds)
 
     return app

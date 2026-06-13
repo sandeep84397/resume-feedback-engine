@@ -60,4 +60,7 @@ app = build_app(
     clock=clock,
     serve_ui=os.environ.get("RFE_SERVE_UI", "1") != "0",
     retention_days=int(os.environ.get("RFE_RETENTION_DAYS", "365")),
+    rate_limit=(int(os.environ["RFE_RATE_LIMIT"])
+                if os.environ.get("RFE_RATE_LIMIT") else None),
+    rate_window_seconds=int(os.environ.get("RFE_RATE_WINDOW_SECONDS", "60")),
 )
