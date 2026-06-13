@@ -1,9 +1,13 @@
-# Rejection Feedback Engine
+# Resume Feedback Engine
 
-Open-source, self-hosted engine that turns rejections into honest,
-criterion-based candidate feedback. Glass box, not black box: a
-pre-declared rubric judges; your own LLM only extracts evidence and
-writes the words. No candidate data leaves your infrastructure.
+Open-source, self-hosted engine that evaluates resumes against a
+published rubric and generates honest, criterion-based feedback for
+candidates. Glass box, not black box: a pre-declared rubric judges;
+your own LLM only extracts evidence and writes the words. No candidate
+data leaves your infrastructure.
+
+Feedback is generated whether a candidate advances or not — rejection
+is just one outcome, always explained against the same published criteria.
 
 ## How it works
 
@@ -167,3 +171,5 @@ Data (SQLite DB + audit log) persists in the `rfe-data` volume.
 | `RFE_WEBHOOK_URL` | _(unset)_ | Outbound webhook receiver URL |
 | `RFE_WEBHOOK_SECRET` | _(empty)_ | HMAC secret for webhook signatures |
 | `RFE_DOMAIN` | `localhost` | Caddy TLS domain; `localhost` = self-signed; real domain = Let's Encrypt |
+| `RFE_RATE_LIMIT` | _(unset)_ | Max requests per window per client (API key or IP); unset = no limit |
+| `RFE_RATE_WINDOW_SECONDS` | `60` | Rate-limit window length in seconds |

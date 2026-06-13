@@ -14,7 +14,7 @@ Self-hosted deployments should stay current.
 
 **Do not open a public GitHub issue for security vulnerabilities.**
 
-Report privately via [GitHub Security Advisories](https://github.com/sandeepdhami/rejection-feedback-engine/security/advisories/new):
+Report privately via [GitHub Security Advisories](https://github.com/sandeep84397/resume-feedback-engine/security/advisories/new):
 
 1. Click "Report a vulnerability" on the Security tab.
 2. Describe the issue: component, reproduction steps, impact.

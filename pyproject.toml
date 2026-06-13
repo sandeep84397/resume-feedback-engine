@@ -1,7 +1,7 @@
 [project]
 name = "rfe"
 version = "0.1.0"
-description = "Rejection Feedback Engine - open-source, rubric-based candidate feedback"
+description = "Resume Feedback Engine - open-source, rubric-based candidate feedback"
 requires-python = ">=3.12"
 dependencies = [
     "pydantic>=2.7",
