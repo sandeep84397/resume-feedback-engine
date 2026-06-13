@@ -9,6 +9,15 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 from rfe.domain.errors import DomainError, InvalidTransitionError, RubricImmutableError
 
 SALARY_CRITERION_ID = "salary_band"
+EXPERIENCE_CRITERION_ID = "experience_range"
+SENIORITY_CRITERION_ID = "seniority_level"
+RESERVED_CRITERION_IDS = {
+    SALARY_CRITERION_ID, EXPERIENCE_CRITERION_ID, SENIORITY_CRITERION_ID,
+}
+
+
+def normalize_seniority_level(value: str) -> str:
+    return "".join(ch.lower() for ch in value.strip() if ch.isalnum())
 
 
 class CriterionType(str, Enum):
@@ -28,9 +37,9 @@ class Criterion(BaseModel):
     @field_validator("id")
     @classmethod
     def _reject_reserved_id(cls, v: str) -> str:
-        if v == SALARY_CRITERION_ID:
+        if v in RESERVED_CRITERION_IDS:
             raise ValueError(
-                f"criterion id '{SALARY_CRITERION_ID}' is reserved; use a different id"
+                f"criterion id '{v}' is reserved; use a different id"
             )
         return v
 
@@ -42,10 +51,20 @@ class Rubric(BaseModel):
     criteria: list[Criterion] | tuple[Criterion, ...] = Field(default_factory=list)
     salary_band_min: float | None = None
     salary_band_max: float | None = None
+    experience_min_years: float | None = Field(default=None, ge=0)
+    experience_max_years: float | None = Field(default=None, ge=0)
+    allowed_seniority_levels: list[str] = Field(default_factory=list)
     published: bool = False
 
+    @field_validator("allowed_seniority_levels", mode="before")
+    @classmethod
+    def _normalize_allowed_seniority_levels(cls, v):
+        if v is None:
+            return []
+        return [n for item in v if (n := normalize_seniority_level(str(item)))]
+
     @model_validator(mode="after")
-    def _validate_salary_band(self) -> "Rubric":
+    def _validate_ranges(self) -> "Rubric":
         if (
             self.salary_band_min is not None
             and self.salary_band_max is not None
@@ -54,6 +73,15 @@ class Rubric(BaseModel):
             raise ValueError(
                 f"salary_band_min ({self.salary_band_min}) must be <= "
                 f"salary_band_max ({self.salary_band_max})"
+            )
+        if (
+            self.experience_min_years is not None
+            and self.experience_max_years is not None
+            and self.experience_min_years > self.experience_max_years
+        ):
+            raise ValueError(
+                f"experience_min_years ({self.experience_min_years}) must be <= "
+                f"experience_max_years ({self.experience_max_years})"
             )
         return self
 
@@ -97,7 +125,17 @@ class Candidate(BaseModel):
     email: str
     resume_text: str
     salary_expectation: float | None = None
+    years_experience: float | None = Field(default=None, ge=0)
+    current_level: str | None = None
     created_at: datetime | None = None
+
+    @field_validator("current_level")
+    @classmethod
+    def _normalize_current_level(cls, v: str | None) -> str | None:
+        if v is None:
+            return None
+        normalized = normalize_seniority_level(v)
+        return normalized or None
 
     @field_validator("resume_text")
     @classmethod
@@ -126,7 +164,12 @@ class Evaluation(BaseModel):
     rubric_id: str
     scores: list[CriterionScore] = Field(default_factory=list)
     status: EvaluationStatus = EvaluationStatus.COMPLETE
+    salary_checked: bool = False
     salary_mismatch: bool = False
+    experience_checked: bool = False
+    experience_mismatch: bool = False
+    seniority_checked: bool = False
+    seniority_mismatch: bool = False
 
 
 class FeedbackStatus(str, Enum):

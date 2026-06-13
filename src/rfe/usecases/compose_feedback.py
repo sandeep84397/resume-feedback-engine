@@ -3,7 +3,8 @@ from pydantic import BaseModel, Field
 from rfe.domain.entities import (Candidate, Evaluation, EvaluationStatus,
                                  Feedback, FeedbackBullet, Rubric)
 from rfe.domain.errors import DomainError, FeedbackValidationError
-from rfe.domain.selection import SALARY_CRITERION_ID, select_unmet_criteria
+from rfe.domain.selection import (EXPERIENCE_CRITERION_ID, SALARY_CRITERION_ID,
+                                  SENIORITY_CRITERION_ID, select_unmet_criteria)
 from rfe.ports.model_provider import ModelOutputError, ModelProvider
 
 
@@ -41,6 +42,10 @@ class ComposeFeedback:
         for cid in unmet:
             if cid == SALARY_CRITERION_ID:
                 lines.append(f"- id={cid}: salary expectation above the budgeted band")
+            elif cid == EXPERIENCE_CRITERION_ID:
+                lines.append(f"- id={cid}: experience outside the role's target range")
+            elif cid == SENIORITY_CRITERION_ID:
+                lines.append(f"- id={cid}: seniority level outside the role's target levels")
             else:
                 c = by_id[cid]
                 lines.append(f"- id={cid} name={c.name} required={c.description} "

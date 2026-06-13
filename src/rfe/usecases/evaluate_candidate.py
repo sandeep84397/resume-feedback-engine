@@ -55,13 +55,37 @@ class EvaluateCandidate:
         known = {c.id for c in rubric.criteria}
         scores = [s for s in payload.scores if s.criterion_id in known]
 
-        salary_mismatch = (
+        salary_checked = (
             candidate.salary_expectation is not None
             and rubric.salary_band_max is not None
-            and candidate.salary_expectation > rubric.salary_band_max
+        )
+        salary_mismatch = salary_checked and candidate.salary_expectation > rubric.salary_band_max
+        experience_checked = (
+            candidate.years_experience is not None
+            and (rubric.experience_min_years is not None
+                 or rubric.experience_max_years is not None)
+        )
+        experience_mismatch = experience_checked and (
+            (rubric.experience_min_years is not None
+             and candidate.years_experience < rubric.experience_min_years)
+            or (rubric.experience_max_years is not None
+                and candidate.years_experience > rubric.experience_max_years)
+        )
+        seniority_checked = (
+            candidate.current_level is not None
+            and bool(rubric.allowed_seniority_levels)
+        )
+        seniority_mismatch = (
+            seniority_checked
+            and candidate.current_level not in rubric.allowed_seniority_levels
         )
 
         return Evaluation(id=evaluation_id, candidate_id=candidate.id,
                           rubric_id=rubric.id, scores=scores,
                           status=EvaluationStatus.COMPLETE,
-                          salary_mismatch=salary_mismatch)
+                          salary_checked=salary_checked,
+                          salary_mismatch=salary_mismatch,
+                          experience_checked=experience_checked,
+                          experience_mismatch=experience_mismatch,
+                          seniority_checked=seniority_checked,
+                          seniority_mismatch=seniority_mismatch)

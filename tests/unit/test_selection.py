@@ -11,9 +11,12 @@ def make_rubric() -> Rubric:
     ])
 
 
-def make_evaluation(scores, salary_mismatch=False) -> Evaluation:
+def make_evaluation(scores, salary_mismatch=False, experience_mismatch=False,
+                    seniority_mismatch=False) -> Evaluation:
     return Evaluation(id="e1", candidate_id="cand1", rubric_id="r1",
-                      scores=scores, salary_mismatch=salary_mismatch)
+                      scores=scores, salary_mismatch=salary_mismatch,
+                      experience_mismatch=experience_mismatch,
+                      seniority_mismatch=seniority_mismatch)
 
 
 def test_low_scores_are_unmet():
@@ -29,6 +32,14 @@ def test_salary_mismatch_adds_salary_criterion():
     ev = make_evaluation([CriterionScore(criterion_id="k8s", score=5)],
                          salary_mismatch=True)
     assert select_unmet_criteria(make_rubric(), ev) == [SALARY_CRITERION_ID]
+
+
+def test_experience_and_seniority_mismatches_add_reserved_criteria():
+    ev = make_evaluation([CriterionScore(criterion_id="k8s", score=5)],
+                         experience_mismatch=True, seniority_mismatch=True)
+    assert select_unmet_criteria(make_rubric(), ev) == [
+        "experience_range", "seniority_level",
+    ]
 
 
 def test_unknown_criterion_ids_ignored():

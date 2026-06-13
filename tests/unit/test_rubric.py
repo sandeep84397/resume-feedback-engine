@@ -74,9 +74,28 @@ def test_salary_band_none_is_ok():
     assert r.salary_band_max is None
 
 
+def test_experience_range_min_greater_than_max_raises():
+    with pytest.raises((ValueError, DomainError)):
+        Rubric(id="r1", role_id="role1",
+               experience_min_years=6, experience_max_years=3)
+
+
+def test_experience_range_equal_is_ok():
+    r = Rubric(id="r1", role_id="role1",
+               experience_min_years=5, experience_max_years=5)
+    assert r.experience_min_years == r.experience_max_years
+
+
+def test_allowed_seniority_levels_are_normalized():
+    r = Rubric(id="r1", role_id="role1",
+               allowed_seniority_levels=[" SDE 2 ", "sde-3", ""])
+    assert r.allowed_seniority_levels == ["sde2", "sde3"]
+
+
 # --- Reserved criterion id ---
 
 def test_reserved_criterion_id_raises():
-    """Criterion id 'salary_band' is reserved and must be rejected at construction."""
-    with pytest.raises((ValueError, DomainError)):
-        Criterion(id="salary_band", name="Salary Band")
+    """Reserved synthetic criteria are rejected at construction."""
+    for cid in ("salary_band", "experience_range", "seniority_level"):
+        with pytest.raises((ValueError, DomainError)):
+            Criterion(id=cid, name=cid)

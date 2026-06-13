@@ -35,6 +35,18 @@ LINKED = BulletsPayload(
                             text="The role required 5 years of Kubernetes; your resume showed 1.")],
 )
 
+EXPERIENCE_LINKED = BulletsPayload(
+    intro="Thank you for your application.",
+    bullets=[FeedbackBullet(criterion_id="experience_range",
+                            text="The role was scoped for 3-6 years; the profile showed 11.")],
+)
+
+SENIORITY_LINKED = BulletsPayload(
+    intro="Thank you for your application.",
+    bullets=[FeedbackBullet(criterion_id="seniority_level",
+                            text="The role targeted SDE 2 or SDE 3; the profile showed SDE 4.")],
+)
+
 UNLINKED = BulletsPayload(
     intro="Thanks.",
     bullets=[FeedbackBullet(criterion_id="made_up_reason", text="You seemed unenthusiastic.")],
@@ -86,3 +98,25 @@ def test_model_output_error_twice_raises_model_output_error():
         ComposeFeedback(mock).execute(make_candidate(), make_rubric(),
                                       make_evaluation(), feedback_id="f1")
     assert len(mock.calls) == 2
+
+
+def test_experience_mismatch_can_drive_feedback():
+    ev = Evaluation(id="e1", candidate_id="cand1", rubric_id="r1", scores=[
+        CriterionScore(criterion_id="k8s", score=5),
+    ], experience_mismatch=True)
+
+    fb = ComposeFeedback(MockModelProvider([EXPERIENCE_LINKED])).execute(
+        make_candidate(), make_rubric(), ev, feedback_id="f1")
+
+    assert fb.bullets[0].criterion_id == "experience_range"
+
+
+def test_seniority_mismatch_can_drive_feedback():
+    ev = Evaluation(id="e1", candidate_id="cand1", rubric_id="r1", scores=[
+        CriterionScore(criterion_id="k8s", score=5),
+    ], seniority_mismatch=True)
+
+    fb = ComposeFeedback(MockModelProvider([SENIORITY_LINKED])).execute(
+        make_candidate(), make_rubric(), ev, feedback_id="f1")
+
+    assert fb.bullets[0].criterion_id == "seniority_level"
