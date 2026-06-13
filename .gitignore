@@ -6,3 +6,6 @@ __pycache__/
 .pytest_cache/
 *.db
 *.jsonl
+rfe.db
+rfe.db-shm
+rfe.db-wal
